@@ -1,16 +1,11 @@
-import './App.css'
+import "./App.css";
+import Fetch_API from "./APIS/Fetch_API";
 function App() {
-  
-
   return (
-   <>
-   <div>
-    this is the youtube clone
-
-   </div>
-   
-   </>
-  )
+    <>
+      <Fetch_API/>
+    </>
+  );
 }
 
-export default App
+export default App;
