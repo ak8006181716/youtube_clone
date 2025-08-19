@@ -10,8 +10,8 @@ const Fetch_API = () => {
         
       const fetchData =async()=>{
         try{
-        const responce =await axios.get('http://localhost:3000/hello');
-        setData(responce.data);
+        const responce =await axios.get('http://localhost:3000/api/v1/users/register');
+       setData(responce.data);
         }
         catch(error){
             console.log(error)
