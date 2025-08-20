@@ -28,8 +28,9 @@ import commentRouter from './routes/comment.routes.js';
 import dashboardRouter from './routes/dashboard.routes.js';
 import playlistRouter from './routes/playlist.routes.js';
 
-//Router declaration
 
+
+ //Router declaration
 app.use("/api/v1/users",userRouter);
 app.use("/api/v1/videos",videoRouter);
 app.use("/api/v1/likes",likeRouter);

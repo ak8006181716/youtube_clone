@@ -15,11 +15,11 @@ export const verifyJWT =asyncHandler(async (req, _, next)=>{
   
      const decodedtoken = jwt.verify(token,process.env.ACCESS_TOKEN_SECRET);
   
-     const user =User.findById(decodedtoken?._id).select("-password -refreshToken");
+     const user = await User.findById(decodedtoken?._id).select("-password -refreshToken");
      if(!user) throw new ApiError(404,"Invalid token or user not found");
       req.user = user;
       next();
   } catch (error) {
-    throw new ApiError(401, error?.massage || "Unauthorized access: Invalid token or user not found");
+    throw new ApiError(401, error?.message || "Unauthorized access: Invalid token or user not found");
   }
 })

@@ -388,9 +388,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, history, "whatch history fetched successfully"));
 });
 
-const uploadVideo = asyncHandler(async (req, res) => {
-  
-});
+
 
 export {
   registerUser,
