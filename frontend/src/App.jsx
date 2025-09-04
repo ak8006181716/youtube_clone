@@ -1,4 +1,6 @@
 import "./App.css";
+import Navbar from "./components/Navbar";
+import VideoCard from "./components/VideoCard";
 function App() {
   // This is the main component of the application
   // It serves as the entry point for the React application
@@ -6,10 +8,8 @@ function App() {
   // You can add more components and functionality here as needed 
   return (
     <>
-      <div className="App">
-        <h1>Welcome to the videoTube</h1>
-        
-      </div>
+      <Navbar />
+      <VideoCard />    
     </>
   );
 }
