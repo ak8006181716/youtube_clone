@@ -19,14 +19,14 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         await Like.deleteOne({
             _id: existingLike._id   
         })
-        return res.status(200).json(new ApiResponse(201, null,"Like removed successfully"));
+        return res.status(200).json(new ApiResponse(200, null,"Like removed successfully"));
     }
     else {
         await Like.create({
             video: videoId,
             owner: req.user._id
         })
-        return res.status(201).json(new ApiResponse(201,null, "like successfully added"));
+        return res.status(201).json(new ApiResponse(201, null, "Like added successfully"));
     }
 })
 
@@ -37,21 +37,21 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid comment ID");
     }
     const existingLike = await Like.findOne({
-        Comment:commentId,
+        comment:commentId,
         owner:req.user._id
     })
     if(existingLike){
         await Like.deleteOne({
             _id:existingLike._id
         })
-        return res.status(201).json(201,null,"like delete successfull")
+        return res.status(200).json(new ApiResponse(200, null, "Like removed successfully"))
     }
     else{
         await Like.create({
-            Comment:commentId,
+            comment:commentId,
             owner:req.user._id
         }) 
-        return res.status(201).json(201,null,"like successfully added")
+        return res.status(201).json(new ApiResponse(201, null, "Like added successfully"))
     }
 })
 
@@ -60,38 +60,31 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     //TODO: toggle like on tweet
     if(!isValidObjectId(tweetId)) throw new ApiError(400,"invalid tweetId");
 
-    const existingtweet = await findOne({
+    const existingLike = await Like.findOne({
         tweet: tweetId,
         owner:req.user._id
-
     })
 
-    if(existingtweet){
+    if(existingLike){
         await Like.deleteOne({
-            _id : existingtweet._id
-    })
-    return res.status(201).json(201,"like delete successfull")
+            _id : existingLike._id
+        })
+        return res.status(200).json(new ApiResponse(200, null, "Like removed successfully"))
     } else{
         await Like.create({
-            _id:tweetId,
+            tweet:tweetId,
             owner:req.user._id
         })
-        return res.status(201).json(201,null,"likeed successfull")
+        return res.status(201).json(new ApiResponse(201, null, "Like added successfully"))
     }
-}
-)
+})
 
 const getLikedVideos = asyncHandler(async (req, res) => {
     //TODO: get all liked videos
     const likedVideos = await Like.find({ owner: req.user._id })
         .populate('video')
         .exec();
-    if (!likedVideos || likedVideos.length === 0) {
-        return res.status(404).json(new ApiResponse(404, null, "No liked videos found"));
-    }
-    return res.status(200).json(new ApiResponse(200, likedVideos, "Liked videos successfully"));
-
-    
+    return res.status(200).json(new ApiResponse(200, likedVideos || [], "Liked videos fetched successfully"));
 })
 
 export {

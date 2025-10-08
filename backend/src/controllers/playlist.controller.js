@@ -3,8 +3,7 @@ import {Playlist} from "../models/playlist.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
-import { populate } from "dotenv"
-import { response } from "express"
+// Removed unused imports
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
@@ -34,11 +33,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     const playlists = await Playlist.find({owner: userId})
         .populate("owner", "-password -refreshToken")
         .populate("videos");    
-    if (!playlists || playlists.length === 0) {
-        return res.status(404).json(new ApiResponse(404, null, "No playlists found for this user"));
-    }
-   
-    return res.status(200).json(new ApiResponse(200, playlists, "Playlists fetched successfully"));
+    return res.status(200).json(new ApiResponse(200, playlists || [], "Playlists fetched successfully"));
 })
 
 const getPlaylistById = asyncHandler(async (req, res) => {
@@ -47,16 +42,20 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     if (!isValidObjectId(playlistId)) {
         throw new ApiError(400, "Invalid playlist ID");
     }
-    const populatedPlaylist = await Playlist.findById(playlist._id)
+    const populatedPlaylist = await Playlist.findById(playlistId)
         .populate("owner", "-password -refreshToken")
         .populate("videos");
 
-    if (!populatedPlaylist) res.status(404).json(new ApiResponse(404, null, "Playlist not found"));
-    if (!populatedPlaylist.videos || populatedPlaylist.videos.length === 0) res.status(201).Json(new ApiResponse(201, null, "No videos found in this playlist"));
+    if (!populatedPlaylist) {
+        return res.status(404).json(new ApiResponse(404, null, "Playlist not found"));
+    }
+    if (!populatedPlaylist.videos || populatedPlaylist.videos.length === 0) {
+        return res.status(201).json(new ApiResponse(201, null, "No videos found in this playlist"));
+    }
     
     // Return the populated playlist
-    res.status(201).json(
-        new ApiResponse(201, populatedPlaylist, "Playlist feteched successfully"))
+    return res.status(201).json(
+        new ApiResponse(201, populatedPlaylist, "Playlist fetched successfully"));
     
 })
 
@@ -80,7 +79,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
 const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     const {playlistId, videoId} = req.params
     // TODO: remove video from playlist
-    if(!isValidObjectId(playlistId)|| !isValidObjectId(videoId)) throw new ApiError(404, "invalid playlist or videoID");
+    if(!isValidObjectId(playlistId)|| !isValidObjectId(videoId)) throw new ApiError(400, "invalid playlist or videoID");
     const updatedPlaylist = await Playlist.findByIdAndUpdate(
         playlistId,
         { $pull: { videos: videoId } }, // remove videoId from videos array
@@ -88,13 +87,13 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     );
     if (!updatedPlaylist) throw new ApiError(404, "Playlist not found");
     
-    res.status(201).json(new ApiResponse(201,updatePlaylist,"video removed successfuly"));
+    res.status(201).json(new ApiResponse(201, updatedPlaylist, "video removed successfully"));
 })
 
 const deletePlaylist = asyncHandler(async (req, res) => {
     const {playlistId} = req.params
     // TODO: delete playlist
-    if(!isValidObjectId(playlistId)) throw new ApiError(404, "Playlist id is not valid");
+    if(!isValidObjectId(playlistId)) throw new ApiError(400, "Playlist id is not valid");
     const deleteplaylist = await Playlist.findByIdAndDelete(playlistId);
     if(!deleteplaylist) throw new ApiError(404,"Playlist not found");
     res.status(200).json(new ApiResponse(200,deleteplaylist,"playlist deleted successfully"));

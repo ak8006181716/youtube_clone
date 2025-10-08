@@ -6,11 +6,17 @@ import {
   publishAVideo,
   togglePublishStatus,
   updateVideo,
+  normalFeedVIdeos
 } from "../controllers/video.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
+
+  router.get("/feed",normalFeedVIdeos);
+  router.get("/:videoId",getVideoById);
+  
+
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
 router
@@ -32,7 +38,6 @@ router
 
 router
   .route("/:videoId")
-  .get(getVideoById)
   .delete(deleteVideo)
   .patch(upload.fields([   
       {

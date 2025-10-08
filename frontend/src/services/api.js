@@ -1,9 +1,13 @@
-import React from 'react'
+import axios from 'axios'
 
-const api = () => {
-  return (
-    <div>api</div>
-  )
-}
+const baseURL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'
+
+const api = axios.create({
+  baseURL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+})
 
 export default api

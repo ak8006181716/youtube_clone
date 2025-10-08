@@ -1,9 +1,96 @@
-import React from 'react'
+import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
+import { publishVideo } from "../services/videoService.js";
+import { useAuth } from "../services/Auth.jsx";
 
 const Upload = () => {
-  return (
-    <div>Upload</div>
-  )
-}
+  const [video, setVideo] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [Thumbnail, setThumbnail] = useState("");
 
-export default Upload
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("videoFile", video);
+      fd.append("title", title);
+      fd.append("description", description);
+      fd.append("thumbnail", Thumbnail);
+
+      await publishVideo(fd);
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen">
+      <h1 className="text-2xl font-bold">Upload</h1>
+      <form onSubmit={onSubmit} className="flex flex-col gap-2 w-96">
+        {/* File upload */}
+        <input
+          type="file"
+          accept="video/*"
+          required
+          aria-label="Select video"
+          onChange={(e) => setVideo(e.target.files?.[0] || null)}
+          className="inputfields w-full"
+        />
+         <input
+          type="file"
+          accept="image/*"
+          required
+          aria-label="Select thumbnail"
+          onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
+          className="inputfields w-full"
+        />
+
+        {/* Input fields */}
+        <input
+          type="text"
+          placeholder="Title"
+          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="inputfields w-full placeholder-black"
+        />
+       
+        <input
+          type="text"
+          placeholder="Description"
+          required
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="inputfields w-full"
+        />
+       
+       
+       
+        
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="btnn w-full mt-2 py-2 bg-blue-500 text-white rounded"
+        >
+          {loading ? "Uploading..." : "Upload"}
+        </button>
+
+        {error && <p className="text-red-500 text-sm">{error}</p>}
+      </form>
+    </div>
+  );
+};
+
+export default Upload;

@@ -25,10 +25,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
     const tweets = await Tweet.find({ owner: userId })
         .populate("owner", "-password -refreshToken")
         .sort({ createdAt: -1 }); // Sort by creation date, most recent first
-    if (!tweets || tweets.length === 0) {
-        return res.status(404).json(new ApiResponse(404, null, "No tweets found for this user"));
-    }
-    res.status(200).json(new ApiResponse(tweets, "User tweets fetched successfully"));
+    res.status(200).json(new ApiResponse(tweets || [], "User tweets fetched successfully"));
 })
 
 const updateTweet = asyncHandler(async (req, res) => {
