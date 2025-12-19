@@ -1,7 +1,26 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getUserChannelProfile } from '../services/userService'
 
 const VideoCard = ({ video }) => {
+  const [subscriberCount, setSubscriberCount] = useState(null)
+
+  useEffect(() => {
+    const loadChannelInfo = async () => {
+      try {
+        if (!video?.owner?.username) return
+        const res = await getUserChannelProfile(video.owner.username)
+        const info = res?.data || res
+        if (typeof info?.subscribersCount === 'number') {
+          setSubscriberCount(info.subscribersCount)
+        }
+      } catch (err) {
+        console.error('Error loading channel info for card:', err)
+      }
+    }
+    loadChannelInfo()
+  }, [video?.owner?.username])
+
   if (!video) return null
 
   const formatDuration = (seconds) => {
@@ -31,7 +50,7 @@ const VideoCard = ({ video }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="bg-[#0f0f0f] rounded-lg overflow-hidden hover:bg-[#181818] transition-colors cursor-pointer">
       <Link to={`/video/${video._id}`}>
         <div className="relative">
           {video.thumbnail ? (
@@ -41,7 +60,7 @@ const VideoCard = ({ video }) => {
               className="w-full h-48 object-cover"
             />
           ) : (
-            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+            <div className="w-full h-48 bg-[#272727] flex items-center justify-center">
               <span className="text-gray-500">No thumbnail</span>
             </div>
           )}
@@ -53,36 +72,36 @@ const VideoCard = ({ video }) => {
         </div>
       </Link>
       
-      <div className="p-4">
+      <div className="p-3">
         <Link to={`/video/${video._id}`}>
-          <h3 className="font-semibold text-lg mb-2 line-clamp-2 hover:text-red-600 transition-colors">
+          <h3 className="font-semibold text-sm mb-2 line-clamp-2 text-white hover:text-gray-300 transition-colors">
             {video.title}
           </h3>
         </Link>
         
-        <div className="flex items-center space-x-3 text-sm text-gray-600">
+        <div className="flex items-start space-x-3 text-sm">
           {video.owner?.avatar && (
             <img 
               src={video.owner.avatar} 
               alt={video.owner.fullName}
-              className="w-8 h-8 rounded-full"
+              className="w-9 h-9 rounded-full flex-shrink-0"
             />
           )}
-          <div>
+          <div className="flex-1 min-w-0">
             <Link 
               to={`/profile/${video.owner?.username}`}
-              className="hover:text-red-600 transition-colors"
+              className="text-gray-400 hover:text-white transition-colors text-xs block"
             >
               {video.owner?.fullName || 'Unknown User'}
             </Link>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-400 mt-1">
               {video.views !== undefined ? formatViews(video.views) : '0 views'} • {formatDate(video.createdAt)}
             </div>
           </div>
         </div>
         
         {video.description && (
-          <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+          <p className="text-sm text-gray-400 mt-2 line-clamp-2">
             {video.description}
           </p>
         )}

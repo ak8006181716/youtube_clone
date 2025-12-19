@@ -11,6 +11,7 @@ import {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  forgetPassword,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -36,7 +37,7 @@ router.route("/register").post(
 
 // router.route("/login").post(loginUser)
 router.post("/login", noFileUpload.none(), loginUser);
-
+router.post("/forgetPassword",noFileUpload.none(),forgetPassword);
 //secure route
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);

@@ -35,7 +35,7 @@ const Login = () => {
 
   return (
    <>
-   <div className='flex justify-center items-start py-16 px-4 min-h-[80vh] bg-gradient-to-br from-red-100 via-white to-red-200'>
+   <div className='flex justify-center items-center px-4 min-h-screen py-10 bg-gradient-to-br from-red-700 via-white to-red-700'>
      <div className='w-full max-w-md bg-white/80 backdrop-blur rounded-2xl shadow-xl p-6 border'>
        <div className='text-center mb-6'>
          <h2 className='text-2xl font-bold'>Welcome back</h2>
@@ -53,7 +53,7 @@ const Login = () => {
          {error && <p className="text-red-500 text-sm">{error}</p>}
          <div className='flex items-center justify-between text-sm'>
            <label className='flex items-center gap-2'><input type="checkbox" />Remember me</label>
-           <a href="#" className='text-blue-600 hover:underline'>Forgot Password?</a>
+           <Link to='/forgetPassword' className='text-blue-600 hover:underline'>Forgot Password?</Link>
          </div>
          <button type="submit" className='btnn w-full' disabled={loading}>{loading ? 'Logging in...' : 'Login'}</button>
        </form>

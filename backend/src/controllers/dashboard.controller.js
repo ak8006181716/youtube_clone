@@ -22,7 +22,8 @@ const getChannelStats = asyncHandler(async (req, res) => {
         totalSubscribers,
         totalLikes
     };
-    res.status(200).json(new ApiResponse(channelStats, "Channel stats fetched successfully"));
+    // ApiResponse expects: StatusCode, data, message
+    res.status(200).json(new ApiResponse(200, channelStats, "Channel stats fetched successfully"));
 })
 
 const getChannelVideos = asyncHandler(async (req, res) => {
@@ -32,10 +33,19 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     const videos = await Video.find({ owner: channelId })
         .populate("owner", "-password -refreshToken")
         .sort({ createdAt: -1 });
-    if (!videos || videos.length === 0) {
-        return res.status(404).json(new ApiResponse(404, null, "No videos found for this channel"));
-    }
-    res.status(200).json(new ApiResponse(videos, "Channel videos fetched successfully"));
+
+    // Always return 200 with an array (possibly empty) so frontend can handle "no videos" state
+    const safeVideos = Array.isArray(videos) ? videos : [];
+
+    res.status(200).json(
+        new ApiResponse(
+            200,
+            safeVideos,
+            safeVideos.length
+                ? "Channel videos fetched successfully"
+                : "No videos found for this channel"
+        )
+    );
 })
 
 export {

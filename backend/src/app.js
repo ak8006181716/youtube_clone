@@ -3,15 +3,14 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import errorHandler from "./middlewares/error.middleware.js";
 
 const app = express(); 
      // Enable CORS with credentials and specify the allowed origin
-app.use(cors(
-    {
-        origin:process.env.CLIENT_URL || 'http://localhost:3000',
-        credentials: true,
-    }
-));
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+  }));
 // Middleware to parse JSON and URL-encoded data
 app.use(express.json({limit:'20kb'}));  // Limit the size of JSON payloads to 20kb
 app.use(express.urlencoded({ extended: true,limit:'20kb' }));   // Limit the size of URL-encoded payloads to 20kb
@@ -39,5 +38,8 @@ app.use("/api/v1/subscriptions",subscriptionRouter);
 app.use("/api/v1/comments",commentRouter);
 app.use("/api/v1/dashboard",dashboardRouter);
 app.use("/api/v1/playlists",playlistRouter);
+
+
+app.use(errorHandler);
 
 export default app;

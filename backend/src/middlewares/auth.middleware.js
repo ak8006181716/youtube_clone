@@ -23,3 +23,21 @@ export const verifyJWT =asyncHandler(async (req, _, next)=>{
     throw new ApiError(401, error?.message || "Unauthorized access: Invalid token or user not found");
   }
 })
+
+// Optional JWT verification - doesn't throw errors, just sets req.user if token is valid
+export const optionalVerifyJWT = asyncHandler(async (req, _, next) => {
+  try {
+    const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+    if (token) {
+      const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+      const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
+      if (user) {
+        req.user = user;
+      }
+    }
+    next();
+  } catch (error) {
+    // Silently fail and continue without setting req.user
+    next();
+  }
+})

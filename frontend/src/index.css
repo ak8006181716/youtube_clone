@@ -90,7 +90,20 @@ input::placeholder {
   height: 45px;
   font-weight: 600;
   text-align: center;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 5);
+  cursor: pointer;
+  margin-bottom: 30px;
+  margin-top: 16px;
+  
+}
+.btnn:hover {
+  background: #0a2862;
+  color: #fff;
+  transition: all 0.3s ease;
+  border: 2px solid #0a2862;
+  color: #fff;
+  background: #0a2862;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 5);
   cursor: pointer;
   margin-bottom: 30px;
   margin-top: 16px;
@@ -139,4 +152,17 @@ input::-webkit-contacts-auto-fill-button {
   width: 0;
   margin: 0;
   padding: 0;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
 }

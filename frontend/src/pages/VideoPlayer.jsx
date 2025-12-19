@@ -13,7 +13,11 @@ import {
   Heart,
   Share2
 } from 'lucide-react'
-import { toggleVideoLike } from '../services/videoService'
+import { toggleVideoLike, fetchVideoById } from '../services/videoService'
+import { getUserChannelProfile } from '../services/userService'
+import { toggleSubscription } from '../services/subscriptionService'
+import { getUserPlaylists, addVideoToPlaylist, createPlaylist } from '../services/playlistService'
+import { useAuth } from '../services/Auth.jsx'
 
 // Inline VideoPlayerControls component
 const VideoPlayerControls = ({ 
@@ -303,25 +307,37 @@ const VideoPlayerControls = ({
 
 const VideoPlayer = () => {
   const { id: videoId } = useParams()
+  const { user } = useAuth()
+  const hasFetchedRef = useRef(false)
   const [video, setVideo] = useState(null)
   const [relatedVideos, setRelatedVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [subscriberCount, setSubscriberCount] = useState(0)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false)
+  const [userPlaylists, setUserPlaylists] = useState([])
+  const [loadingPlaylists, setLoadingPlaylists] = useState(false)
+  const [addingToPlaylist, setAddingToPlaylist] = useState(null)
+  const [playlistError, setPlaylistError] = useState('')
+  const [showCreatePlaylist, setShowCreatePlaylist] = useState(false)
+  const [newPlaylistName, setNewPlaylistName] = useState('')
+  const [newPlaylistDesc, setNewPlaylistDesc] = useState('')
+  const [creatingPlaylist, setCreatingPlaylist] = useState(false)
 
   // Fetch video details
   const fetchVideo = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000'}/api/v1/videos/${videoId}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch video')
-      }
-      const data = await response.json()
-      setVideo(data.data || data)
-      // Set initial like count (you might want to fetch this from a separate endpoint)
-      setLikeCount(data.data?.likes || 0)
+      const response = await fetchVideoById(videoId)
+      const videoData = response?.data || response
+      setVideo(videoData)
+
+      // Set initial like count and liked state from backend
+      setLikeCount(videoData?.likes || 0)
+      setIsLiked(!!videoData?.isLiked)
     } catch (err) {
       setError('Failed to load video')
       console.error('Error fetching video:', err)
@@ -330,14 +346,149 @@ const VideoPlayer = () => {
     }
   }, [videoId])
 
+  // Fetch channel (owner) subscriber info
+  const fetchChannelInfo = useCallback(async (ownerUsername) => {
+    if (!ownerUsername) return
+    try {
+      const res = await getUserChannelProfile(ownerUsername)
+      const channelData = res?.data || res
+      setSubscriberCount(channelData?.subscribersCount || 0)
+      setIsSubscribed(!!channelData?.ifSubscribed)
+    } catch (err) {
+      console.error('Error fetching channel info:', err)
+    }
+  }, [])
+
   // Handle like toggle
   const handleLike = async () => {
     try {
-      await toggleVideoLike(videoId)
-      setIsLiked(!isLiked)
-      setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
+      const res = await toggleVideoLike(videoId)
+      const data = res?.data || res
+      if (typeof data?.likes === 'number') {
+        setLikeCount(data.likes)
+      }
+      if (typeof data?.isLiked === 'boolean') {
+        setIsLiked(data.isLiked)
+      }
     } catch (err) {
       console.error('Error toggling like:', err)
+    }
+  }
+
+  const handleSubscribe = async () => {
+    if (!video?.owner?._id) return
+    try {
+      await toggleSubscription(video.owner._id)
+      // Refresh channel info from backend so subscriber count and
+      // "isSubscribed" state always match real data
+      if (video?.owner?.username) {
+        await fetchChannelInfo(video.owner.username)
+      }
+    } catch (err) {
+      console.error('Error toggling subscription:', err)
+    }
+  }
+
+  // Fetch user playlists
+  const fetchUserPlaylists = useCallback(async () => {
+    if (!user?._id) return
+    setLoadingPlaylists(true)
+    setPlaylistError('')
+    try {
+      const res = await getUserPlaylists(user._id)
+      const playlistsData = Array.isArray(res?.data) ? res.data : []
+      setUserPlaylists(playlistsData)
+    } catch (err) {
+      console.error('Error fetching playlists:', err)
+      setPlaylistError('Failed to load playlists')
+    } finally {
+      setLoadingPlaylists(false)
+    }
+  }, [user])
+
+  // Open playlist modal
+  const openPlaylistModal = () => {
+    if (!user) {
+      setPlaylistError('Please log in to add videos to playlists')
+      return
+    }
+    setShowPlaylistModal(true)
+    fetchUserPlaylists()
+  }
+
+  // Close playlist modal
+  const closePlaylistModal = () => {
+    setShowPlaylistModal(false)
+    setShowCreatePlaylist(false)
+    setNewPlaylistName('')
+    setNewPlaylistDesc('')
+    setPlaylistError('')
+  }
+
+  // Add video to playlist
+  const handleAddToPlaylist = async (playlistId) => {
+    if (!videoId || !playlistId) return
+    
+    setAddingToPlaylist(playlistId)
+    setPlaylistError('')
+    try {
+      const res = await addVideoToPlaylist(videoId, playlistId)
+      if (res?.success) {
+        // Refresh playlists to show updated video count
+        await fetchUserPlaylists()
+        // Close modal after successful add
+        setTimeout(() => {
+          closePlaylistModal()
+        }, 500)
+      } else {
+        setPlaylistError(res?.massage || 'Failed to add video to playlist')
+      }
+    } catch (err) {
+      console.error('Error adding video to playlist:', err)
+      const errorMsg = err?.response?.data?.massage || err?.message || 'Failed to add video to playlist'
+      setPlaylistError(errorMsg)
+    } finally {
+      setAddingToPlaylist(null)
+    }
+  }
+
+  // Create new playlist and add video
+  const handleCreateAndAdd = async (e) => {
+    e?.preventDefault()
+    if (!newPlaylistName.trim()) {
+      setPlaylistError('Playlist name is required')
+      return
+    }
+
+    setCreatingPlaylist(true)
+    setPlaylistError('')
+    try {
+      const payload = {
+        name: newPlaylistName.trim(),
+        description: newPlaylistDesc.trim() || ''
+      }
+      const res = await createPlaylist(payload)
+      
+      if (res?.success) {
+        const newPlaylistId = res?.data?._id
+        if (newPlaylistId) {
+          // Add video to the newly created playlist
+          await handleAddToPlaylist(newPlaylistId)
+        } else {
+          // Refresh playlists and close create form
+          await fetchUserPlaylists()
+          setShowCreatePlaylist(false)
+          setNewPlaylistName('')
+          setNewPlaylistDesc('')
+        }
+      } else {
+        setPlaylistError(res?.massage || 'Failed to create playlist')
+      }
+    } catch (err) {
+      console.error('Error creating playlist:', err)
+      setPlaylistError(err?.response?.data?.massage || err?.message || 'Failed to create playlist')
+    } finally {
+      setCreatingPlaylist(false)
     }
   }
 
@@ -355,11 +506,20 @@ const VideoPlayer = () => {
   }
 
   useEffect(() => {
-    if (videoId) {
-      fetchVideo()
-      fetchRelatedVideos()
-    }
+    // In React StrictMode, effects can run twice in development.
+    // Guard to ensure we only fetch (and thus increment views) once per mount.
+    if (!videoId || hasFetchedRef.current) return
+    hasFetchedRef.current = true
+    fetchVideo()
+    fetchRelatedVideos()
   }, [videoId, fetchVideo])
+
+  // When video owner is loaded, fetch channel subscriber info
+  useEffect(() => {
+    if (video?.owner?.username) {
+      fetchChannelInfo(video.owner.username)
+    }
+  }, [video?.owner?.username, fetchChannelInfo])
 
   // Format functions
   const formatViews = (views) => {
@@ -415,14 +575,14 @@ const VideoPlayer = () => {
               <VideoPlayerControls
                 src={video.videoUrl}
                 poster={video.thumbnail}
-                onTimeUpdate={(time) => {
-                  // Optional: Track watch time
-                  console.log('Watch time:', time)
-                }}
-                onEnded={() => {
-                  // Optional: Mark video as watched
-                  console.log('Video finished')
-                }}
+                // onTimeUpdate={(time) => {
+                //   // Optional: Track watch time
+                //  // console.log('Watch time:', time)
+                // }}
+                // onEnded={() => {
+                //   // Optional: Mark video as watched
+                //   console.log('Video finished')
+                // }}
               />
             </div>
 
@@ -438,6 +598,18 @@ const VideoPlayer = () => {
                 </div>
                 
                 <div className="flex items-center space-x-2">
+                {user && user._id !== video.owner?._id && (
+                  <button
+                    onClick={handleSubscribe}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      isSubscribed
+                        ? 'bg-red-700 text-white hover:bg-red-800'
+                        : 'bg-red-500 text-white hover:bg-red-600'
+                    }`}
+                  >
+                    {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                  </button>
+                )}
                   <button 
                     onClick={handleLike}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center space-x-2 ${
@@ -449,6 +621,14 @@ const VideoPlayer = () => {
                     <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
                     <span>{likeCount}</span>
                   </button>
+                  {user && (
+                    <button 
+                      onClick={openPlaylistModal}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium transition-colors"
+                    >
+                      Add to playlist
+                    </button>
+                  )}
                   <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium transition-colors flex items-center space-x-2">
                     <Share2 className="w-4 h-4" />
                     <span>Share</span>
@@ -481,13 +661,31 @@ const VideoPlayer = () => {
                     {video.owner?.fullName || 'Unknown User'}
                   </a>
                   <p className="text-sm text-gray-600">
-                    {/* Add subscriber count if available */}
                     Creator
+                    {typeof subscriberCount === 'number' && (
+                      <span className="ml-2">
+                        • {subscriberCount.toLocaleString()} subscribers
+                      </span>
+                    )}
                   </p>
                 </div>
-                <button className="px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors font-medium">
-                  Subscribe
-                </button>
+                {user && user._id !== video.owner?._id && (
+                  <button
+                    onClick={handleSubscribe}
+                    className={`px-6 py-2 rounded-full transition-colors font-medium ${
+                      isSubscribed
+                        ? 'bg-red-700 text-white hover:bg-red-800'
+                        : 'bg-red-500 text-white hover:bg-red-600'
+                    }`}
+                  >
+                    {isSubscribed ? 'Subscribed' : 'Subscribe'}
+                    {typeof subscriberCount === 'number' && (
+                      <span className="ml-2 text-sm">
+                        {subscriberCount.toLocaleString()} 
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Description */}
@@ -551,6 +749,143 @@ const VideoPlayer = () => {
           </div>
         </div>
       </div>
+
+      {/* Add to Playlist Modal */}
+      {showPlaylistModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">Add to Playlist</h2>
+              <button
+                onClick={closePlaylistModal}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            {!showCreatePlaylist ? (
+              <>
+                {playlistError && (
+                  <div className="mb-4 text-red-600 text-sm bg-red-50 p-3 rounded">
+                    {playlistError}
+                  </div>
+                )}
+
+                {loadingPlaylists ? (
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+                    <p className="mt-2 text-gray-600">Loading playlists...</p>
+                  </div>
+                ) : userPlaylists.length > 0 ? (
+                  <div className="space-y-2">
+                    {userPlaylists.map((playlist) => (
+                      <button
+                        key={playlist._id}
+                        onClick={() => handleAddToPlaylist(playlist._id)}
+                        disabled={addingToPlaylist === playlist._id}
+                        className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{playlist.name}</h3>
+                            {playlist.description && (
+                              <p className="text-sm text-gray-600 mt-1 line-clamp-1">
+                                {playlist.description}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-500 mt-1">
+                              {playlist.videos?.length || 0} videos
+                            </p>
+                          </div>
+                          {addingToPlaylist === playlist._id && (
+                            <div className="ml-4">
+                              <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">You don't have any playlists yet.</p>
+                    <button
+                      onClick={() => setShowCreatePlaylist(true)}
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                    >
+                      Create New Playlist
+                    </button>
+                  </div>
+                )}
+
+                {userPlaylists.length > 0 && (
+                  <div className="mt-4 pt-4 border-t">
+                    <button
+                      onClick={() => setShowCreatePlaylist(true)}
+                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
+                    >
+                      + Create New Playlist
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <form onSubmit={handleCreateAndAdd}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Playlist Name *</label>
+                  <input
+                    type="text"
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                    placeholder="Enter playlist name"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <textarea
+                    value={newPlaylistDesc}
+                    onChange={(e) => setNewPlaylistDesc(e.target.value)}
+                    placeholder="Enter playlist description (optional)"
+                    rows="3"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  />
+                </div>
+
+                {playlistError && (
+                  <div className="mb-4 text-red-600 text-sm">{playlistError}</div>
+                )}
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreatePlaylist(false)
+                      setNewPlaylistName('')
+                      setNewPlaylistDesc('')
+                      setPlaylistError('')
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    disabled={creatingPlaylist}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={creatingPlaylist}
+                  >
+                    {creatingPlaylist ? 'Creating...' : 'Create & Add Video'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

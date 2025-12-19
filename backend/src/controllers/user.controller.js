@@ -97,15 +97,17 @@ const loginUser = asyncHandler(async (req, res) => {
     "-password -refreshToken"
   );
 
-  const options = {
+  const cookieOptions = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
   };
 
   return res
     .status(201)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
     .json(
       new ApiResponse(
         201,
@@ -131,14 +133,16 @@ const logoutUser = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-  const options = {
+  const cookieOptions = {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
   };
   return res
     .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
     .json(new ApiResponse(200, null, "User logged out successfully"));
 });
 
@@ -282,7 +286,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
-        from: "subscription",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "channel",
         as: "subscribers",
@@ -290,7 +294,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     },
     {
       $lookup: {
-        from: "subscription",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "subscriber",
         as: "subscribedTO",
@@ -389,6 +393,24 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, history, "whatch history fetched successfully"));
 });
 
+const forgetPassword = asyncHandler(async(req,res)=>{
+  const {email,newPassword,confirmPassword}= req.body
+  if (!(email))
+    throw new ApiError(404, "Email is required");
+  if(newPassword!==confirmPassword)
+    throw new ApiError(400,"Password Mismatch");
+  const user = await User.findOne({email});
+  if(!user)
+    throw new ApiError(404,"Enter valid Email");
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+  .status(200)
+  .json(new ApiResponse(200, null, "Password reset successfully"));
+
+})
+
 
 
 export {
@@ -403,4 +425,5 @@ export {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  forgetPassword,
 };

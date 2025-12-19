@@ -37,7 +37,7 @@ const Register = () => {
     <>
     <div>
       <form onSubmit={onSubmit}>
-        <div className='flex justify-center items-start py-10 bg-gradient-to-br from-red-100 via-white to-red-200 px-4'>
+        <div className='flex justify-center items-center py-10 min-h-screen bg-gradient-to-br from-red-700 via-white to-red-700 px-4'>
           <div className='w-full max-w-3xl bg-white/80 backdrop-blur rounded-2xl shadow-xl p-6 border'>
             <div className='text-center mb-6'>
               <h2 className='text-2xl font-bold'>Create your account</h2>

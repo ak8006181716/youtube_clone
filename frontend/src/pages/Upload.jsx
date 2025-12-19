@@ -35,9 +35,11 @@ const Upload = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl font-bold">Upload</h1>
+      <h1 className="text-2xl py-2 font-bold">Upload</h1>
       <form onSubmit={onSubmit} className="flex flex-col gap-2 w-96">
         {/* File upload */}
+        <div className="flex flex-col gap-2 bg-white p-3 border rounded-xl">
+        <label className="font-bold">Select video</label>
         <input
           type="file"
           accept="video/*"
@@ -46,6 +48,10 @@ const Upload = () => {
           onChange={(e) => setVideo(e.target.files?.[0] || null)}
           className="inputfields w-full"
         />
+        </div>
+        <div className="flex flex-col gap-2  bg-white p-3 border rounded-xl">
+        <label className="font-bold">Select thumbnail</label>
+        
          <input
           type="file"
           accept="image/*"
@@ -54,8 +60,11 @@ const Upload = () => {
           onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
           className="inputfields w-full"
         />
-
+        </div>
         {/* Input fields */}
+        <div className="flex flex-col gap-2 bg-white p-3 border rounded-xl">
+          <label className="font-bold">Title</label>
+        
         <input
           type="text"
           placeholder="Title"
@@ -64,7 +73,10 @@ const Upload = () => {
           onChange={(e) => setTitle(e.target.value)}
           className="inputfields w-full placeholder-black"
         />
-       
+        </div>
+        <div className="flex flex-col gap-2 bg-white p-3 border rounded-xl">
+          <label className="font-bold">Description</label>
+        
         <input
           type="text"
           placeholder="Description"
@@ -74,7 +86,7 @@ const Upload = () => {
           className="inputfields w-full"
         />
        
-       
+       </div>
        
         
 

@@ -15,19 +15,31 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         video: videoId,
         owner: req.user._id
     });
+
     if(existingLike){
         await Like.deleteOne({
             _id: existingLike._id   
-        })
-        return res.status(200).json(new ApiResponse(200, null,"Like removed successfully"));
-    }
-    else {
+        });
+    } else {
         await Like.create({
             video: videoId,
             owner: req.user._id
-        })
-        return res.status(201).json(new ApiResponse(201, null, "Like added successfully"));
+        });
     }
+
+    // After toggling, compute the latest likes count and current user's like state
+    const likes = await Like.countDocuments({ video: videoId });
+    const isLiked = !existingLike;
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          { likes, isLiked },
+          existingLike ? "Like removed successfully" : "Like added successfully"
+        )
+      );
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {

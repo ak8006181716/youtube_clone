@@ -1,6 +1,7 @@
 import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
+import { Like } from "../models/like.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -68,24 +69,52 @@ const getVideoById = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Find the video and populate owner details
-    const video = await Video.findById(videoId)
-      .populate('owner', 'username avatar fullName') // Populate owner details
-      .select('-__v') // Exclude version field
+    // Always increment view count when this endpoint is called,
+    // and return the updated video document.
+    const video = await Video.findByIdAndUpdate(
+      videoId,
+      { $inc: { views: 1 } },
+      { new: true }
+    )
+      .populate("owner", "username avatar fullName")
+      .select("-__v");
 
     if (!video) {
       throw new ApiError(404, "Video not found");
     }
 
-    // Increment view count when video is fetched
-    await Video.findByIdAndUpdate(
-      videoId, 
-      { $inc: { views: 1 } },
-      { new: false } // Don't return updated document to save bandwidth
-    );
+    // Compute likes count for this video
+    const likes = await Like.countDocuments({ video: videoId });
 
-    // Return the video data
-    res.status(200).json(new ApiResponse(200, video, "Video fetched successfully"));
+    // Determine if the currently authenticated user has liked this video,
+    // and add to their watch history if logged in.
+    let isLiked = false;
+    if (req.user && req.user._id) {
+      const existingLike = await Like.findOne({
+        video: videoId,
+        owner: req.user._id,
+      }).select("_id");
+
+      isLiked = !!existingLike;
+
+      // Add video to user's watch history (no duplicate entries)
+      await User.findByIdAndUpdate(req.user._id, {
+        $addToSet: { watchHistory: videoId },
+      });
+    }
+
+    const videoWithLikes = {
+      ...video.toObject(),
+      likes,
+      isLiked,
+    };
+
+    // Return the video data with likes info
+    res
+      .status(200)
+      .json(
+        new ApiResponse(200, videoWithLikes, "Video fetched successfully")
+      );
 
   } catch (error) {
     console.error('Error fetching video:', error);

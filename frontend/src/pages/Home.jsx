@@ -54,12 +54,12 @@ const Home = () => {
 
   if (error && videos.length === 0) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="min-h-screen bg-[#0f0f0f] flex justify-center items-center">
         <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{error}</p>
           <button 
             onClick={retryLoad}
-            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
           >
             Try Again
           </button>
@@ -69,26 +69,26 @@ const Home = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#0f0f0f] text-white px-4 py-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Welcome to VideoTube</h1>
-        <p className="text-gray-600">Discover amazing videos from creators around the world</p>
+        <h1 className="text-3xl font-bold mb-2 text-white">Welcome to VideoTube</h1>
+        <p className="text-gray-400">Discover amazing videos from creators around the world</p>
       </div>
 
       {/* Show error message if there are videos but loading more failed */}
       {error && videos.length > 0 && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded mb-4">
           <p>{error}</p>
         </div>
       )}
 
       {videos.length === 0 && !loading ? (
         <div className="text-center py-16">
-          <h2 className="text-2xl font-semibold mb-4">No videos found</h2>
-          <p className="text-gray-600 mb-6">Be the first to upload a video!</p>
+          <h2 className="text-2xl font-semibold mb-4 text-white">No videos found</h2>
+          <p className="text-gray-400 mb-6">Be the first to upload a video!</p>
           <Link 
             to="/upload" 
-            className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition-colors"
+            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors inline-block"
           >
             Upload Video
           </Link>
@@ -104,7 +104,7 @@ const Home = () => {
           {loading && (
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
-              <p className="mt-2 text-gray-600">Loading videos...</p>
+              <p className="mt-2 text-gray-400">Loading videos...</p>
             </div>
           )}
 
@@ -112,7 +112,7 @@ const Home = () => {
             <div className="text-center">
               <button
                 onClick={loadMore}
-                className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors"
+                className="bg-[#272727] text-white px-6 py-3 rounded-lg hover:bg-[#303030] transition-colors"
               >
                 Load More Videos
               </button>
@@ -121,7 +121,7 @@ const Home = () => {
 
           {!hasMore && videos.length > 0 && (
             <div className="text-center py-4">
-              <p className="text-gray-500">No more videos to load</p>
+              <p className="text-gray-400">No more videos to load</p>
             </div>
           )}
         </>

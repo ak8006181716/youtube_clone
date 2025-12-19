@@ -35,6 +35,6 @@ export const updateUserCoverImage = async (formData) => {
 }
 
 export const changePassword = async (payload) => {
-  const res = await api.post('/api/v1/users/change-password', payload)
+  const res = await api.post('/api/v1/users/forgetPassword', payload)
   return res.data
 }
