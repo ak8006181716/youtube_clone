@@ -7,7 +7,7 @@ const connector = async () => {
     const connectionInstance = await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
     console.log(`mongoDB connected !! DB HOST: ${connectionInstance.connection.host} DB NAME: ${connectionInstance.connection.name}`);
   } catch (error) {
-    if (error.code === 'ECONNREFUSED' && error.syscall === 'querySrv') {
+    if ((error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') && error.syscall === 'querySrv') {
       console.warn("DNS querySrv failed. Retrying database connection using public DNS servers...");
       try {
         dns.setServers(["8.8.8.8", "8.8.4.4"]);

@@ -10,8 +10,6 @@ import Navbar from './components/Navbar.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import { AuthProvider, useAuth } from './services/Auth.jsx'
 import ForgetPassword from './pages/ForgetPassword.jsx'
-import Subscriptions from './pages/Subscriptions.jsx'
-import Shorts from './pages/Shorts.jsx'
 
 function Protected({children}) {
   const {user} = useAuth();
@@ -48,8 +46,6 @@ export default function App(){
           <Route path="/upload" element={<Protected><Upload/></Protected>} />
           <Route path="/video/:id" element={<VideoPlayer/>} />
           <Route path="/profile" element={<Protected><Profile/></Protected>} />
-          <Route path="/subscriptions" element={<Subscriptions/>} />
-          <Route path="/shorts" element={<Shorts/>} />
         </Routes>
       </Layout>
     </AuthProvider>

@@ -1,12 +1,14 @@
 import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { publishVideo } from "../services/videoService.js";
 import { useAuth } from "../services/Auth.jsx";
 
 const Upload = () => {
+  const navigate = useNavigate();
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [Thumbnail, setThumbnail] = useState("");
@@ -18,6 +20,7 @@ const Upload = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccessMessage("");
     try {
       const fd = new FormData();
       fd.append("videoFile", video);
@@ -26,6 +29,15 @@ const Upload = () => {
       fd.append("thumbnail", Thumbnail);
 
       await publishVideo(fd);
+      setSuccessMessage("Your video is uploaded successfully! Redirecting to profile...");
+      setVideo(null);
+      setThumbnail("");
+      setTitle("");
+      setDescription("");
+      
+      setTimeout(() => {
+        navigate("/profile");
+      }, 2000);
     } catch (err) {
       setError(err.message || "Something went wrong");
     } finally {
@@ -35,7 +47,7 @@ const Upload = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-2xl py-2 font-bold">Upload</h1>
+      <h1 className="text-2xl py-2 font-bold text-white">Upload</h1>
       <form onSubmit={onSubmit} className="flex flex-col gap-2 w-96">
         {/* File upload */}
         <div className="flex flex-col gap-2 bg-white p-3 border rounded-xl">
@@ -93,13 +105,18 @@ const Upload = () => {
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading}
-          className="btnn w-full mt-2 py-2 bg-blue-500 text-white rounded"
+          disabled={loading || successMessage}
+          className="btnn w-full mt-2 py-2 bg-blue-500 text-white rounded cursor-pointer disabled:bg-blue-300"
         >
           {loading ? "Uploading..." : "Upload"}
         </button>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
+        {successMessage && (
+          <div className="bg-green-500/20 border border-green-500/50 text-green-400 p-3 rounded-lg text-center font-semibold text-sm mt-2">
+            {successMessage}
+          </div>
+        )}
       </form>
     </div>
   );
