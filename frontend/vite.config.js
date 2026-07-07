@@ -8,4 +8,10 @@ export default defineConfig({
      tailwindcss(),
     react()
   ],
+  server: {
+  allowedHosts: ["auroraaa.in"]
+},
+preview: {
+  allowedHosts: ["auroraaa.in"]
+},
 })
