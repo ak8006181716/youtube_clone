@@ -8,7 +8,7 @@ import errorHandler from "./middlewares/error.middleware.js";
 const app = express(); 
      // Enable CORS with credentials and specify the allowed origin
 app.use(cors({
-    origin: ["http://localhost:5173","https://videotube-pearl.vercel.app","http://localhost:4173"],
+    origin: ["http://localhost:5173","https://videotube-pearl.vercel.app","http://13.127.78.55:4174"],
     credentials: true
   }));
 // Middleware to parse JSON and URL-encoded data
